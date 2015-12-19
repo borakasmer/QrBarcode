@@ -1,0 +1,116 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>ControlPage</title>
+    <script src="~/Scripts/jquery-2.1.4.min.js"></script>
+    <style type="text/css">
+        body {
+            font-family: sans-serif;
+        }
+
+        .main {
+            border: 1px solid black;
+            box-shadow: 10px 10px 5px #888;
+            border-radius: 12px;
+            padding: 20px;
+            background-color: #ddd;
+            margin: 25px;
+            width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .logo {
+            width: 275px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            padding: 15px;
+        }
+
+        .container {
+            -webkit-perspective: 300;
+            perspective: 300;
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <h2>Mobile Hareket</h2>
+        <table>
+            <tr>
+                <td>Hareket Destek</td>
+                <td id="doEvent"></td>
+            </tr>
+            <tr>
+                <td>Hareket Sol/Sağ [gamma]</td>
+                <td id="doTiltLR"></td>
+            </tr>
+            <tr>
+                <td>Hareket Ön/Arka [beta]</td>
+                <td id="doTiltFB"></td>
+            </tr>
+            <tr>
+                <td>Direction [alpha]</td>
+                <td id="doDirection"></td>
+            </tr>
+        </table>
+    </div>
+    <input type="text" id="connectionID" value="@ViewBag.connectionID" style="display:none" />
+    <div class="container" style="-webkit-perspective: 300; perspective: 300;">
+        <img src="/Content/Images/html5_logo.png" id="imgLogo" class="logo">
+    </div>
+    <script>
+        init();
+        function init() {
+            if (window.DeviceOrientationEvent) {
+                $('#doEvent').html("Destekleniyor");
+                window.addEventListener("deviceorientation", function (eventData) {
+                    var tiltLR = eventData.gamma;
+                    var tiltFB = eventData.beta;
+                    var direction = eventData.alpha;
+                    DeviceOrientationHandler(tiltLR, tiltFB, direction);
+                },false);
+            }
+            else {
+                $('#doEvent').html("Desteklenmiyor");
+            }
+        }
+        var side='';
+        function DeviceOrientationHandler(tiltLR, tiltFB, direction) {
+
+            var _tiltLR = Math.round(tiltLR);
+            var _tiltFB = Math.round(tiltFB);
+            var _direction = Math.round(direction);
+            $('#doTiltLR').html(_tiltLR);
+            $('#doTiltFB').html(_tiltFB);
+            $('#doDirection').html(_direction);
+            if (_tiltLR > 8 && side != 'right')
+            {
+                side = 'right';
+                $.post("/Home/MoveRobot", { command: 'right', connectionID: $('#connectionID').val() });
+            }
+            else if (_tiltLR < -8 && side != 'left') {
+                side = 'left';
+                $.post("/Home/MoveRobot", { command: 'left', connectionID: $('#connectionID').val() });
+            }
+            else if (_tiltLR > -8 && _tiltLR < 8 && side != 'stop') {
+                side = 'stop';
+                $.post("/Home/MoveRobot", { command: 'stop', connectionID: $('#connectionID').val() });
+            }
+
+            var logo = document.getElementById("imgLogo");
+            logo.style.webkitTransform = "rotate(" + tiltLR + "deg) rotate3d(1,0,0, " + (tiltFB * -1) + "deg)";
+            logo.style.MozTransform = "rotate(" + tiltLR + "deg)";
+            logo.style.transform = "rotate(" + tiltLR + "deg) rotate3d(1,0,0, " + (tiltFB * -1) + "deg)";
+        }
+    </script>
+</body>
+</html>
